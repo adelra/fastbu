@@ -1,7 +1,7 @@
+use crate::cache::CacheEntry;
+use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
-use serde::{Serialize, Deserialize};
-use crate::cache::CacheEntry;
 
 pub fn save_to_disk(key: &str, entry: &CacheEntry) -> std::io::Result<()> {
     let mut file = OpenOptions::new()
@@ -20,4 +20,3 @@ pub fn load_from_disk(key: &str) -> std::io::Result<Option<CacheEntry>> {
     let entry: CacheEntry = serde_json::from_str(&data)?;
     Ok(Some(entry))
 }
-

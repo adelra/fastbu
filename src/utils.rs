@@ -8,4 +8,3 @@ pub fn calculate_hash(input: &str) -> u64 {
     input.hash(&mut hasher);
     hasher.finish()
 }
-
