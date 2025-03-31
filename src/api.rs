@@ -10,25 +10,27 @@ pub async fn start_server(cache: FastbuCache) -> Result<(), warp::Error> {
      * GET /get/{key} - Retrieves the value associated with a given key from the cache.
      * If the key is not found, returns 404 Not Found.
      */
-     let get_item = warp::path!("get" / String)
-     .and(warp::any().map(move || cache.clone()))
-     .and_then(|key: String, cache: Arc<FastbuCache>| {
-         let value = cache.get(&key);
-         async move {
-             if let Some(val) = value {
-                 Ok::<_, warp::Rejection>(warp::reply::json(&val))
-             } else {
-                 Err(warp::reject::not_found())
-             }
-         }
-     });
+    let get_cache = cache.clone(); // Clone the Arc for the GET route
+    let get_item = warp::path!("get" / String)
+        .and(warp::any().map(move || get_cache.clone())) // Use the cloned Arc
+        .and_then(|key: String, cache: Arc<FastbuCache>| {
+            let value = cache.get(&key);
+            async move {
+                if let Some(val) = value {
+                    Ok::<_, warp::Rejection>(warp::reply::json(&val))
+                } else {
+                    Err(warp::reject::not_found())
+                }
+            }
+        });
 
     /**
      * POST /set/{key}/{value} - Stores a key-value pair in the cache.
      * Returns 200 OK upon successful insertion.
      */
+    let set_cache = cache.clone(); // Clone the Arc for the POST route
     let set_item = warp::path!("set" / String / String)
-        .and(warp::any().map(move || cache.clone()))
+        .and(warp::any().map(move || set_cache.clone())) // Use the cloned Arc
         .and_then(|key: String, value: String, cache: Arc<FastbuCache>| {
             cache.insert(key, value);
             async move {
