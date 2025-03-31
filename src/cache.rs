@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Mutex;
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 struct CacheEntry {
@@ -33,4 +33,3 @@ impl FastbuCache {
         cache.remove(key);
     }
 }
-
