@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 #[derive(Serialize, Deserialize, Debug)]
-struct CacheEntry {
+pub struct CacheEntry {
     value: String,
 }
 
