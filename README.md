@@ -4,7 +4,7 @@
   <img src="img/logo.jpg" alt="Fastbu Logo" width="300">
 </p>
 
-A fast, resilient, and fault-tolerant on disk caching system written in Rust.
+A fast, resilient, fault-tolerant, and on-disk caching system written in Rust.
 
 ## Overview
 
