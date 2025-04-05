@@ -1,10 +1,9 @@
 use crate::cache::CacheEntry;
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
-use std::io::{self, Read, Write, Seek, SeekFrom};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use bincode;
 use chrono::{DateTime, Utc};
 
 const STORAGE_DIR: &str = "cache_storage";

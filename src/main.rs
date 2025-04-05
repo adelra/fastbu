@@ -5,9 +5,8 @@ mod utils;
 
 use crate::cache::FastbuCache;
 use crate::api::start_server;
-use warp::Filter;
 use std::net::SocketAddr;
-use log::{info, error, LevelFilter};
+use log::{info, LevelFilter};
 use env_logger::Builder;
 use std::error::Error;
 
