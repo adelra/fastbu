@@ -28,19 +28,26 @@ jobs:
         path: |
           ~/.cargo/registry
           ~/.cargo/git
+          ~/.cargo/index
           target
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
         restore-keys: |
           ${{ runner.os }}-cargo-
     
+    - name: Install development dependencies
+      run: make install-dev-deps
+    
     - name: Check formatting
-      run: cargo fmt --all -- --check
+      run: make format-check
     
     - name: Lint with clippy
-      run: cargo clippy -- -D warnings
+      run: make lint
     
     - name: Build
-      run: cargo build --verbose
+      run: make build
+    
+    - name: Build release
+      run: make build-release
     
     - name: Run tests
-      run: cargo test --verbose 
+      run: make test 

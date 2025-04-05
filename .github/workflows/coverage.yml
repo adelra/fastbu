@@ -19,11 +19,23 @@ jobs:
         override: true
         components: llvm-tools-preview
     
-    - name: Install cargo-llvm-cov
-      run: cargo install cargo-llvm-cov
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          ~/.cargo/index
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+    
+    - name: Install development dependencies
+      run: make install-dev-deps
     
     - name: Generate code coverage
-      run: cargo llvm-cov --html
+      run: make coverage
     
     - name: Upload coverage report
       uses: actions/upload-artifact@v3
