@@ -2,8 +2,8 @@ use crate::cache::FastbuCache;
 use std::sync::Arc;
 use warp::Filter;
 
-pub async fn start_server(cache: FastbuCache) -> Result<(), warp::Error> {
-    /// Starts the web server and listens for incoming requests on localhost:3030.
+pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result<(), warp::Error> {
+    /// Starts the web server and listens for incoming requests.
     let cache = Arc::new(cache);
 
     /**
@@ -44,8 +44,8 @@ pub async fn start_server(cache: FastbuCache) -> Result<(), warp::Error> {
     let routes = get_item.or(set_item);
 
     /**
-     * Starts the Warp server on localhost:3030 and listens for incoming requests.
+     * Starts the Warp server and listens for incoming requests.
      */
-    warp::serve(routes).run(([127, 0, 0, 1], 3030)).await;
+    warp::serve(routes).run(([0, 0, 0, 0], port)).await;
     Ok(())
 }
