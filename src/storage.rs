@@ -1,10 +1,10 @@
 use crate::cache::CacheEntry;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
-use chrono::{DateTime, Utc};
 
 const STORAGE_DIR: &str = "cache_storage";
 const INDEX_FILE: &str = "cache_index.bin";
@@ -56,13 +56,13 @@ impl Storage {
         let mut file = File::open(&self.index_file)?;
         let mut contents = Vec::new();
         file.read_to_end(&mut contents)?;
-        
+
         if !contents.is_empty() {
             let index: Vec<IndexEntry> = bincode::deserialize(&contents)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
             *self.index.lock().unwrap() = index;
         }
-        
+
         Ok(())
     }
 
@@ -70,7 +70,7 @@ impl Storage {
         let index = self.index.lock().unwrap();
         let data = bincode::serialize(&*index)
             .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-        
+
         let mut file = File::create(&self.index_file)?;
         file.write_all(&data)?;
         Ok(())
@@ -85,15 +85,15 @@ impl Storage {
         };
 
         // Serialize the entry
-        let data = bincode::serialize(entry)
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let data =
+            bincode::serialize(entry).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
         // Write to file
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)
             .open(&file_path)?;
-        
+
         file.write_all(&data)?;
         let size = file.metadata()?.len();
 
@@ -121,10 +121,10 @@ impl Storage {
             let mut file = File::open(&entry.file_path)?;
             let mut data = Vec::new();
             file.read_to_end(&mut data)?;
-            
+
             let cache_entry: CacheEntry = bincode::deserialize(&data)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-            
+
             Ok(Some(cache_entry))
         } else {
             Ok(None)

@@ -3,12 +3,12 @@ mod cache;
 mod storage;
 mod utils;
 
-use crate::cache::FastbuCache;
 use crate::api::start_server;
-use std::net::SocketAddr;
-use log::{info, LevelFilter};
+use crate::cache::FastbuCache;
 use env_logger::Builder;
+use log::{info, LevelFilter};
 use std::error::Error;
+use std::net::SocketAddr;
 
 const DEFAULT_HOST: &str = "127.0.0.1";
 const DEFAULT_PORT: u16 = 3031;
@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Parse configuration
     let config = parse_args();
     let addr = SocketAddr::from(([0, 0, 0, 0], config.port));
-    
+
     info!("Server configuration:");
     info!("Host: {}", config.host);
     info!("Port: {}", config.port);
@@ -80,10 +80,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Start the server
     info!("Starting server on {}:{}", config.host, config.port);
-    
+
     // Use the ? operator to propagate errors
     start_server(cache, config.host, config.port).await?;
-    
+
     info!("Server shutdown gracefully");
     Ok(())
 }
