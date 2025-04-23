@@ -5,6 +5,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
+use log::{debug, error, info}; // Add logging
 
 const STORAGE_DIR: &str = "cache_storage";
 const INDEX_FILE: &str = "cache_index.bin";
@@ -77,7 +78,11 @@ impl Storage {
     }
 
     pub fn save(&self, key: &str, entry: &CacheEntry) -> io::Result<()> {
+        debug!("Starting save operation for key: {}", key);
+
         let file_path = self.base_dir.join(format!("{}.cache", key));
+        debug!("Resolved file path for key: {}: {:?}", key, file_path);
+
         let metadata = StorageMetadata {
             created_at: Utc::now(),
             updated_at: Utc::now(),
@@ -85,19 +90,47 @@ impl Storage {
         };
 
         // Serialize the entry
-        let data =
-            bincode::serialize(entry).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        let data = match bincode::serialize(entry) {
+            Ok(data) => {
+                debug!("Successfully serialized entry for key: {}", key);
+                data
+            }
+            Err(e) => {
+                error!("Failed to serialize entry for key: {}. Error: {}", key, e);
+                return Err(io::Error::new(io::ErrorKind::InvalidData, e));
+            }
+        };
 
         // Write to file
-        let mut file = OpenOptions::new()
-            .write(true)
+        debug!("Attempting to write serialized data to file for key: {}", key);
+        let mut file = match OpenOptions::new()
+            .append(true)
             .create(true)
-            .open(&file_path)?;
+            .open(&file_path)
+        {
+            Ok(file) => file,
+            Err(e) => {
+                error!("Failed to open file for key: {}. Error: {}", key, e);
+                return Err(e);
+            }
+        };
 
-        file.write_all(&data)?;
-        let size = file.metadata()?.len();
+        if let Err(e) = file.write_all(&data) {
+            error!("Failed to write data to file for key: {}. Error: {}", key, e);
+            return Err(e);
+        }
+        debug!("Successfully wrote data to file for key: {}", key);
+
+        let size = match file.metadata() {
+            Ok(metadata) => metadata.len(),
+            Err(e) => {
+                error!("Failed to retrieve file metadata for key: {}. Error: {}", key, e);
+                return Err(e);
+            }
+        };
 
         // Update index
+        debug!("Updating index for key: {}", key);
         let mut index = self.index.lock().unwrap();
         if let Some(existing) = index.iter_mut().find(|e| e.key == key) {
             existing.metadata.updated_at = Utc::now();
@@ -111,7 +144,13 @@ impl Storage {
         }
 
         // Save the updated index
-        self.save_index()?;
+        debug!("Saving updated index for key: {}", key);
+        if let Err(e) = self.save_index() {
+            error!("Failed to save index for key: {}. Error: {}", key, e);
+            return Err(e);
+        }
+
+        info!("Successfully completed save operation for key: {}", key);
         Ok(())
     }
 
