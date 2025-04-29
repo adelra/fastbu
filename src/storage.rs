@@ -9,7 +9,6 @@ use std::sync::Mutex; // Add logging
 
 const STORAGE_DIR: &str = "cache_storage";
 const INDEX_FILE: &str = "cache_index.bin";
-const MAX_FILE_SIZE: u64 = 1024 * 1024 * 100; // 100MB per file
 
 #[derive(Debug, Serialize, Deserialize)]
 struct StorageMetadata {
