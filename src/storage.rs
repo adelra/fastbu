@@ -4,7 +4,7 @@ use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
-use std::path::{PathBuf};
+use std::path::PathBuf;
 use std::sync::Mutex; // Add logging
 
 const STORAGE_DIR: &str = "cache_storage";
@@ -62,10 +62,8 @@ impl Storage {
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
             *self.index.lock().unwrap() = index;
         }
-
         Ok(())
     }
-
 
     pub fn save(&self, key: &str, entry: &CacheEntry) -> io::Result<()> {
         debug!("Starting save operation for key: {}", key);
@@ -148,5 +146,4 @@ impl Storage {
         info!("Successfully completed save operation for key: {}", key);
         Ok(())
     }
-
 }

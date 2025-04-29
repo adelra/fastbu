@@ -65,5 +65,4 @@ impl FastbuCache {
         let data = self.data.lock().unwrap();
         data.cache.get(key).map(|entry| entry.value.clone())
     }
-
 }
