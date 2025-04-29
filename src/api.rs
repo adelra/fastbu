@@ -2,21 +2,7 @@ use crate::cache::FastbuCache;
 use log::{debug, error, info, warn};
 use std::net::SocketAddr;
 use std::sync::Arc;
-use warp::reject::Reject;
 use warp::Filter;
-use warp::Rejection;
-
-// Custom error type that implements Reject
-#[derive(Debug)]
-struct CacheError(String);
-
-impl Reject for CacheError {}
-
-impl From<std::io::Error> for CacheError {
-    fn from(err: std::io::Error) -> Self {
-        CacheError(err.to_string())
-    }
-}
 
 async fn handle_rejection(
     err: warp::Rejection,

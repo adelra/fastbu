@@ -66,8 +66,4 @@ impl FastbuCache {
         data.cache.get(key).map(|entry| entry.value.clone())
     }
 
-    pub fn remove(&self, key: &str) {
-        let mut data = self.data.lock().unwrap();
-        data.cache.remove(key);
-    }
 }
