@@ -18,14 +18,21 @@ impl From<std::io::Error> for CacheError {
     }
 }
 
-async fn handle_rejection(err: warp::Rejection) -> Result<impl warp::Reply, std::convert::Infallible> {
+async fn handle_rejection(
+    err: warp::Rejection,
+) -> Result<impl warp::Reply, std::convert::Infallible> {
     if err.is_not_found() {
-        Ok(warp::reply::with_status("NOT_FOUND", warp::http::StatusCode::NOT_FOUND))
+        Ok(warp::reply::with_status(
+            "NOT_FOUND",
+            warp::http::StatusCode::NOT_FOUND,
+        ))
     } else {
-        Ok(warp::reply::with_status("INTERNAL_SERVER_ERROR", warp::http::StatusCode::INTERNAL_SERVER_ERROR))
+        Ok(warp::reply::with_status(
+            "INTERNAL_SERVER_ERROR",
+            warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+        ))
     }
 }
-
 
 pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result<(), warp::Error> {
     info!("Initializing server with host: {} and port: {}", host, port);
@@ -67,7 +74,10 @@ pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result
         .and(warp::post())
         .and(warp::any().map(move || set_cache.clone()))
         .and_then(|key: String, value: String, cache: Arc<FastbuCache>| {
-            debug!("Received POST request to set key: {} with value: {}", key, value);
+            debug!(
+                "Received POST request to set key: {} with value: {}",
+                key, value
+            );
             async move {
                 debug!("Calling cache.insert for key: {}", key);
                 match cache.insert(key.clone(), value.clone()) {
@@ -91,7 +101,8 @@ pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result
             }
         });
 
-    let routes = get_item.or(set_item)
+    let routes = get_item
+        .or(set_item)
         .recover(handle_rejection)
         .with(warp::log("fastbu_cache"));
 

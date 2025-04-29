@@ -1,8 +1,8 @@
 use crate::storage::Storage;
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Mutex;
-use log::{debug, error, info}; // Add logging
+use std::sync::Mutex; // Add logging
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CacheEntry {
@@ -39,7 +39,10 @@ impl FastbuCache {
             Ok(lock) => lock,
             Err(e) => {
                 error!("Failed to acquire lock on data: {}", e);
-                return Err(std::io::Error::new(std::io::ErrorKind::Other, "Lock poisoned"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "Lock poisoned",
+                ));
             }
         };
 

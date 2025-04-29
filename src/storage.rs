@@ -1,11 +1,11 @@
 use crate::cache::CacheEntry;
 use chrono::{DateTime, Utc};
+use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
-use log::{debug, error, info}; // Add logging
+use std::sync::Mutex; // Add logging
 
 const STORAGE_DIR: &str = "cache_storage";
 const INDEX_FILE: &str = "cache_index.bin";
@@ -102,7 +102,10 @@ impl Storage {
         };
 
         // Write to file
-        debug!("Attempting to write serialized data to file for key: {}", key);
+        debug!(
+            "Attempting to write serialized data to file for key: {}",
+            key
+        );
         let mut file = match OpenOptions::new()
             .append(true)
             .create(true)
@@ -116,7 +119,10 @@ impl Storage {
         };
 
         if let Err(e) = file.write_all(&data) {
-            error!("Failed to write data to file for key: {}. Error: {}", key, e);
+            error!(
+                "Failed to write data to file for key: {}. Error: {}",
+                key, e
+            );
             return Err(e);
         }
         debug!("Successfully wrote data to file for key: {}", key);
@@ -124,7 +130,10 @@ impl Storage {
         let size = match file.metadata() {
             Ok(metadata) => metadata.len(),
             Err(e) => {
-                error!("Failed to retrieve file metadata for key: {}. Error: {}", key, e);
+                error!(
+                    "Failed to retrieve file metadata for key: {}. Error: {}",
+                    key, e
+                );
                 return Err(e);
             }
         };
