@@ -4,7 +4,7 @@
   <img src="img/logo.jpg" alt="Fastbu Logo" width="300">
 </p>
 
-A fast, resilient, and fault-tolerant on disk caching system written in Rust.
+A fast, resilient, fault-tolerant, and on-disk caching system written in Rust.
 
 ## Overview
 
@@ -27,6 +27,7 @@ I did this project just to learn Rust and it and probably it's not production re
 
 - Rust 1.56.0 or later
 - Cargo (comes with Rust)
+- Make (for using the Makefile)
 
 ### Building from Source
 
@@ -37,6 +38,23 @@ cd fastbu
 
 # Build the project
 cargo build --release
+
+# Or using Make
+make build-release
+```
+
+### Docker
+
+```bash
+# Pull the Docker image
+docker pull adelra/fastbu
+
+# Run the container
+docker run -p 3031:3031 adelra/fastbu
+
+# Or build and run locally
+make docker-build
+make docker-run
 ```
 
 ## Usage
@@ -46,6 +64,9 @@ cargo build --release
 ```bash
 # Run with default settings (localhost:3030)
 cargo run
+
+# Or using Make
+make run
 
 # Run on a specific port
 cargo run -- -p 8080
@@ -74,6 +95,47 @@ curl -X POST "http://localhost:3030/set/mykey/myvalue"
 
 # Retrieve a value
 curl "http://localhost:3030/get/mykey"
+```
+
+## Development
+
+### Makefile Commands
+
+The project includes a Makefile to simplify common development tasks:
+
+```bash
+# Show available commands
+make help
+
+# Format code
+make format
+
+# Check formatting
+make format-check
+
+# Run linter
+make lint
+
+# Run all checks (format and lint)
+make check
+
+# Build the project
+make build
+
+# Build in release mode
+make build-release
+
+# Run tests
+make test
+
+# Generate code coverage
+make coverage
+
+# Clean build artifacts
+make clean
+
+# Install development dependencies
+make install-dev-deps
 ```
 
 ## Architecture
@@ -126,6 +188,20 @@ graph TD
 - Index-based lookups for efficient retrieval
 - Thread-safe operations for concurrent access
 - Configurable file size limits
+
+## CI/CD
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **Rust CI**: Builds, tests, and lints the code
+- **Docker CI/CD**: Builds and publishes Docker images
+- **Code Coverage**: Generates and uploads code coverage reports
+
+### Status Badges
+
+[![Rust CI](https://github.com/adelra/fastbu/actions/workflows/rust.yml/badge.svg)](https://github.com/adelra/fastbu/actions/workflows/rust.yml)
+[![Docker CI/CD](https://github.com/adelra/fastbu/actions/workflows/docker.yml/badge.svg)](https://github.com/adelra/fastbu/actions/workflows/docker.yml)
+[![Code Coverage](https://github.com/adelra/fastbu/actions/workflows/coverage.yml/badge.svg)](https://github.com/adelra/fastbu/actions/workflows/coverage.yml)
 
 ## Contributing
 
