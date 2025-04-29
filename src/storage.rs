@@ -145,11 +145,7 @@ impl Storage {
 
         // Save the updated index
         debug!("Saving updated index for key: {}", key);
-        if let Err(e) = self.save_index() {
-            error!("Failed to save index for key: {}. Error: {}", key, e);
-            return Err(e);
-        }
-
+        debug!("Index size after update: {}", index.len());
         info!("Successfully completed save operation for key: {}", key);
         Ok(())
     }
