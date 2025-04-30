@@ -4,7 +4,7 @@
   <img src="img/logo.jpg" alt="Fastbu Logo" width="300">
 </p>
 
-A fast, resilient, fault-tolerant, and on-disk caching system written in Rust.
+Fast Binary Ultracache (Fastbu). A quick, resilient, fault-tolerant, and on-disk caching system written in Rust. Mostly for me to learn Rust.
 
 ## Overview
 
