@@ -5,8 +5,9 @@ mod storage;
 use crate::cache::FastbuCache;
 use clap::Parser;
 use env_logger::Builder;
-use log::{info, LevelFilter};
+use log::{info, error, LevelFilter};
 use std::error::Error;
+use std::sync::Arc;
 
 const DEFAULT_HOST: &str = "127.0.0.1";
 const DEFAULT_PORT: u16 = 3031;
@@ -85,14 +86,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
     info!("Port: {}", config.port);
 
     // Initialize the cache
-    let cache = FastbuCache::new();
+    let cache = Arc::new(FastbuCache::new());
     info!("Cache initialized successfully");
+
+    // Clone the arc to pass into the async task
+    let cache_clone = Arc::clone(&cache);
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+        loop {
+            interval.tick().await;
+            if let Err(e) = cache.cleanup() {
+                error!("Cleanup failed: {}", e);
+            }
+        }
+    });
 
     // Start the server
     info!("Starting server on {}:{}", config.host, config.port);
 
     // Use the ? operator to propagate errors
-    crate::api::start_server(cache, config.host, config.port).await?;
+    crate::api::start_server(cache, config.host, config.port).await.map_err(|e| {
+        error!("Server failed to start: {}", e);
+        e
+    })?;
 
     info!("Server shutdown gracefully");
     Ok(())
