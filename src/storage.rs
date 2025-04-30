@@ -146,4 +146,18 @@ impl Storage {
         info!("Successfully completed save operation for key: {}", key);
         Ok(())
     }
+
+    pub fn delete(&self, key: &str) -> io::Result<()> {
+        debug!("Attempting to delete key: {} from storage", key);
+        let mut index = self.index.lock().unwrap();
+        if let Some(entry) = index.iter().position(|e| e.key == key) {
+            let file_path = PathBuf::from(&index[entry].file_path);
+            std::fs::remove_file(file_path)?;
+            index.remove(entry);
+            debug!("Successfully deleted key: {} from storage", key);
+        } else {
+            error!("Key: {} not found in storage", key);
+        }
+        Ok(())
+    }
 }

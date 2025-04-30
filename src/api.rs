@@ -3,6 +3,8 @@ use log::{debug, error, info, warn};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use warp::Filter;
+use std::collections::HashMap;
+
 
 async fn handle_rejection(
     err: warp::Rejection,
@@ -20,7 +22,7 @@ async fn handle_rejection(
     }
 }
 
-pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result<(), warp::Error> {
+pub async fn start_server(cache: Arc<FastbuCache>, host: String, port: u16) -> Result<(), warp::Error> {
     info!("Initializing server with host: {} and port: {}", host, port);
     let cache = Arc::new(cache);
 
@@ -57,35 +59,31 @@ pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result
      */
     let set_cache = cache.clone();
     let set_item = warp::path!("set" / String / String)
-        .and(warp::post())
-        .and(warp::any().map(move || set_cache.clone()))
-        .and_then(|key: String, value: String, cache: Arc<FastbuCache>| {
-            debug!(
-                "Received POST request to set key: {} with value: {}",
-                key, value
-            );
-            async move {
-                debug!("Calling cache.insert for key: {}", key);
-                match cache.insert(key.clone(), value.clone()) {
-                    Ok(_) => {
-                        debug!("Successfully inserted key: {}", key);
-                        // Explicitly return a response
-                        Ok::<_, warp::Rejection>(warp::reply::with_status(
-                            warp::reply::json(&format!("Key '{}' stored successfully", key)),
-                            warp::http::StatusCode::OK,
-                        ))
-                    }
-                    Err(e) => {
-                        error!("Failed to insert key: {}. Error: {}", key, e);
-                        // Explicitly return an error response
-                        Ok::<_, warp::Rejection>(warp::reply::with_status(
-                            warp::reply::json(&format!("Failed to store key '{}'", key)),
-                            warp::http::StatusCode::INTERNAL_SERVER_ERROR,
-                        ))
-                    }
-                }
+    .and(warp::post())
+    .and(warp::query::<HashMap<String, String>>()) // Extract query parameters
+    .and(warp::any().map(move || set_cache.clone()))
+    .and_then(|key: String, value: String, query: HashMap<String, String>, cache: Arc<FastbuCache>| {
+        let ttl_seconds = query
+            .get("ttl")
+            .and_then(|ttl| ttl.parse::<u64>().ok())
+            .unwrap_or(60); // Default TTL if not provided
+        debug!(
+            "Received POST request to set key: {} with value: {} and ttl: {}",
+            key, value, ttl_seconds
+        );
+        async move {
+            match cache.insert(key.clone(), value.clone(), ttl_seconds) {
+                Ok(_) => Ok::<_, warp::Rejection>(warp::reply::with_status(
+                    warp::reply::json(&format!("Key '{}' stored successfully", key)),
+                    warp::http::StatusCode::OK,
+                )),
+                Err(e) => Ok::<_, warp::Rejection>(warp::reply::with_status(
+                    warp::reply::json(&format!("Failed to store key '{}'", key)),
+                    warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+                )),
             }
-        });
+        }
+    });
 
     let routes = get_item
         .or(set_item)
