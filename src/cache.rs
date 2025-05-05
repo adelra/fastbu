@@ -66,3 +66,35 @@ impl FastbuCache {
         data.cache.get(key).map(|entry| entry.value.clone())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_insert_and_get() {
+        let cache = FastbuCache::new();
+
+        let key = "test_key".to_string();
+        let value = "test_value".to_string();
+
+        // Insert the key-value pair
+        assert!(cache.insert(key.clone(), value.clone()).is_ok());
+
+        // Retrieve the value
+        let retrieved_value = cache.get(&key);
+        assert!(retrieved_value.is_some());
+        assert_eq!(retrieved_value.unwrap(), value);
+    }
+
+    #[test]
+    fn test_get_nonexistent_key() {
+        let cache = FastbuCache::new();
+
+        let key = "nonexistent_key";
+
+        // Attempt to retrieve a nonexistent key
+        let retrieved_value = cache.get(key);
+        assert!(retrieved_value.is_none());
+    }
+}
