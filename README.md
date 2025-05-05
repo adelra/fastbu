@@ -4,22 +4,29 @@
   <img src="img/logo.jpg" alt="Fastbu Logo" width="300">
 </p>
 
-A fast, resilient, fault-tolerant, and on-disk caching system written in Rust.
+Fast Binary Ultracache (Fastbu). A quick, resilient, fault-tolerant, and on-disk caching system written in Rust. Mostly for me to learn Rust.
 
 ## Overview
 
 Fastbu is a lightweight caching system that provides persistent storage with high performance and reliability. It's designed to be simple to use while offering robust features for data persistence and retrieval.
 
-I did this project just to learn Rust and it and probably it's not production ready.
+I did this project just to learn Rust, and it is probably not production-ready.
 
 ## Features
 
-- **Fast Access**: In-memory index for quick lookups combined with efficient disk storage
-- **Binary Serialization**: Uses bincode for compact and fast serialization
-- **Fault Tolerance**: Metadata tracking and cleanup capabilities
-- **Thread Safety**: Mutex-protected operations for concurrent access
-- **REST API**: Simple HTTP interface for cache operations
-- **Configurable**: Customizable host and port settings
+- **Fast Access**: In-memory index for quick lookups combined with efficient disk storage.
+- **Binary Serialization**: Uses `bincode` for compact and fast serialization.
+- **Thread Safety**: Mutex-protected operations for concurrent access.
+- **REST API**: Simple HTTP interface for cache operations.
+- **Configurable**: Customizable host and port settings.
+
+### Features in Plan
+
+- **Basic Cleanup Mechanism**: A periodic cleanup task to remove expired entries from the cache.
+- **Advanced Fault Tolerance**: Implement robust recovery mechanisms for corrupted data or disk failures to ensure high reliability.
+- **Metadata Tracking**: Add support for tracking creation time, update time, and size for each cache entry to improve cache management and analytics.
+- **Comprehensive Cleanup**: Enhance the cleanup mechanism to handle inconsistencies in storage and metadata tracking, ensuring a more robust and efficient cache.
+- **Production-Grade Testing**: Develop comprehensive unit tests and integration tests to ensure the system is production-ready and reliable under various conditions.
 
 ## Installation
 
@@ -41,6 +48,7 @@ cargo build --release
 
 # Or using Make
 make build-release
+
 ```
 
 ### Docker
@@ -144,8 +152,6 @@ Fastbu uses a hybrid approach combining in-memory indexing with disk-based stora
 
 1. **In-Memory Index**: Maintains a fast lookup table for all cache entries
 2. **Disk Storage**: Persists data in binary format for efficiency
-3. **Metadata Tracking**: Records creation time, update time, and size for each entry
-4. **Cleanup Mechanism**: Detects and reports inconsistencies in the storage
 
 ```mermaid
 graph TD
@@ -179,8 +185,7 @@ graph TD
 ## Storage Structure
 
 - All cache files are stored in the `cache_storage` directory
-- An index file (`cache_index.bin`) tracks all cache entries
-- Each cache entry is stored in a separate file with metadata
+- Each cache entry is stored in a separate file
 
 ## Performance Considerations
 
