@@ -24,7 +24,7 @@ mod tests {
         let value = "persisted_value";
 
         // Set a value
-        assert!(FastbuCache::set(key, value).await.is_ok());
+        assert!(cache.insert(key.to_string(), value.to_string()).await.is_ok());
 
         // Restart the cache (simulate server restart)
         let new_cache = FastbuCache::new();
