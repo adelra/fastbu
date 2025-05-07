@@ -70,7 +70,7 @@ make docker-run
 ### Starting the Server
 
 ```bash
-# Run with default settings (localhost:3030)
+# Run with default settings (localhost:3031)
 cargo run
 
 # Or using Make
@@ -86,7 +86,7 @@ cargo run -- -h 0.0.0.0 -p 8080
 ### Command Line Options
 
 - `-h, --host <HOST>` - Specify the host to bind to (default: 127.0.0.1)
-- `-p, --port <PORT>` - Specify the port to listen on (default: 3030)
+- `-p, --port <PORT>` - Specify the port to listen on (default: 3031)
 
 ### API Endpoints
 
@@ -99,10 +99,10 @@ The server exposes the following REST API endpoints:
 
 ```bash
 # Store a value
-curl -X POST "http://localhost:3030/set/mykey/myvalue"
+curl -X POST "http://localhost:3031/set/mykey/myvalue"
 
 # Retrieve a value
-curl "http://localhost:3030/get/mykey"
+curl "http://localhost:3031/get/mykey"
 ```
 
 ## Development
