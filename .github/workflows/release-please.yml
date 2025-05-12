@@ -1,11 +1,10 @@
 on:
     push:
       branches:
-        - main
-  
-  name: release-please
-  
-  jobs:
+        - main  
+name: release-please
+
+jobs:
     release-please:
       runs-on: ubuntu-latest
       steps:
@@ -14,4 +13,3 @@ on:
           uses: googleapis/release-please-action@v4
           with:
             release-type: python
-            package-name: release-please-action
