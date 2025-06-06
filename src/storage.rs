@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
-use std::sync::Mutex; // Add logging
+use std::sync::{Arc, Mutex}; // Add logging and Arc
 
 const STORAGE_DIR: &str = "cache_storage";
 const INDEX_FILE: &str = "cache_index.bin";
@@ -27,7 +27,17 @@ struct IndexEntry {
 pub struct Storage {
     base_dir: PathBuf,
     index_file: PathBuf,
-    index: Mutex<Vec<IndexEntry>>,
+    index: Arc<Mutex<Vec<IndexEntry>>>,
+}
+
+impl Clone for Storage {
+    fn clone(&self) -> Self {
+        Storage {
+            base_dir: self.base_dir.clone(),
+            index_file: self.index_file.clone(),
+            index: Arc::clone(&self.index),
+        }
+    }
 }
 
 impl Storage {
@@ -41,7 +51,7 @@ impl Storage {
         let storage = Storage {
             base_dir,
             index_file,
-            index: Mutex::new(Vec::new()),
+            index: Arc::new(Mutex::new(Vec::new())),
         };
 
         // Load existing index if it exists
