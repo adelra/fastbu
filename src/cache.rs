@@ -39,10 +39,7 @@ impl FastbuCache {
             Ok(lock) => lock,
             Err(e) => {
                 error!("Failed to acquire lock on data: {}", e);
-                return Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "Lock poisoned",
-                ));
+                return Err(std::io::Error::other("Lock poisoned"));
             }
         };
 
