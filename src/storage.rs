@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex}; // Add logging and Arc
+use std::sync::{Arc, Mutex}; // Add Arc and Mutex for thread-safe access
 
 const STORAGE_DIR: &str = "cache_storage";
 const INDEX_FILE: &str = "cache_index.bin";
