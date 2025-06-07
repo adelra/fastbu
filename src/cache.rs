@@ -43,49 +43,45 @@ impl FastbuCache {
         let entry = CacheEntry {
             value: value.clone(),
         };
-        
+
         // Create clones for the spawn_blocking operation
         let key_clone = key.clone();
         let entry_clone = entry.clone();
-        
+
         {
             // Update in-memory cache - acquire lock in this smaller scope
             let mut data = match self.data.lock() {
                 Ok(lock) => lock,
                 Err(e) => {
                     error!("Failed to acquire lock on data: {}", e);
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "Lock poisoned",
-                    ));
+                    return Err(std::io::Error::other("Lock poisoned"));
                 }
             };
-            
+
             data.cache.insert(key.clone(), entry.clone());
             debug!("In-memory cache updated for key: {}", key);
         }
-        
+
         // Clone the self reference to move into spawn_blocking
         let self_clone = self.clone();
-        
+
         // Persist to disk using spawn_blocking to avoid blocking the async runtime
         debug!("Attempting to persist key: {} to disk", key);
         let result = task::spawn_blocking(move || {
             let data = match self_clone.data.lock() {
                 Ok(lock) => lock,
                 Err(_e) => {
-                    return Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "Lock poisoned inside spawn_blocking",
-                    ));
+                    return Err(std::io::Error::other("Lock poisoned inside spawn_blocking"));
                 }
             };
             data.storage.save(&key_clone, &entry_clone)
-        }).await.unwrap_or_else(|e| {
+        })
+        .await
+        .unwrap_or_else(|e| {
             error!("Task join error when persisting key: {}. Error: {}", key, e);
-            Err(std::io::Error::new(std::io::ErrorKind::Other, e))
+            Err(std::io::Error::other(e))
         });
-        
+
         if result.is_ok() {
             info!("Successfully persisted key:   {} to disk", key);
         } else {
