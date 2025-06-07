@@ -2,7 +2,8 @@ use crate::storage::Storage;
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Mutex; // Add logging
+use std::sync::{Arc, Mutex}; // Add logging and Arc
+use tokio::task;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CacheEntry {
@@ -10,7 +11,15 @@ pub struct CacheEntry {
 }
 
 pub struct FastbuCache {
-    data: Mutex<CacheData>,
+    data: Arc<Mutex<CacheData>>,
+}
+
+impl Clone for FastbuCache {
+    fn clone(&self) -> Self {
+        FastbuCache {
+            data: Arc::clone(&self.data),
+        }
+    }
 }
 
 struct CacheData {
@@ -21,35 +30,58 @@ struct CacheData {
 impl FastbuCache {
     pub fn new() -> Self {
         FastbuCache {
-            data: Mutex::new(CacheData {
+            data: Arc::new(Mutex::new(CacheData {
                 cache: HashMap::new(),
                 storage: Storage::new().unwrap(),
-            }),
+            })),
         }
     }
 
-    pub fn insert(&self, key: String, value: String) -> Result<(), std::io::Error> {
+    pub async fn insert(&self, key: String, value: String) -> Result<(), std::io::Error> {
         debug!("Attempting to insert key: {} with value: {}", key, value);
 
         let entry = CacheEntry {
             value: value.clone(),
         };
 
-        let mut data = match self.data.lock() {
-            Ok(lock) => lock,
-            Err(e) => {
-                error!("Failed to acquire lock on data: {}", e);
-                return Err(std::io::Error::other("Lock poisoned"));
-            }
-        };
+        // Create clones for the spawn_blocking operation
+        let key_clone = key.clone();
+        let entry_clone = entry.clone();
 
-        // Update in-memory cache
-        data.cache.insert(key.clone(), entry.clone());
-        debug!("In-memory cache updated for key: {}", key);
+        {
+            // Update in-memory cache - acquire lock in this smaller scope
+            let mut data = match self.data.lock() {
+                Ok(lock) => lock,
+                Err(e) => {
+                    error!("Failed to acquire lock on data: {}", e);
+                    return Err(std::io::Error::other("Lock poisoned"));
+                }
+            };
 
-        // Persist to disk
+            data.cache.insert(key.clone(), entry.clone());
+            debug!("In-memory cache updated for key: {}", key);
+        }
+
+        // Clone the self reference to move into spawn_blocking
+        let self_clone = self.clone();
+
+        // Persist to disk using spawn_blocking to avoid blocking the async runtime
         debug!("Attempting to persist key: {} to disk", key);
-        let result = data.storage.save(&key, &entry);
+        let result = task::spawn_blocking(move || {
+            let data = match self_clone.data.lock() {
+                Ok(lock) => lock,
+                Err(_e) => {
+                    return Err(std::io::Error::other("Lock poisoned inside spawn_blocking"));
+                }
+            };
+            data.storage.save(&key_clone, &entry_clone)
+        })
+        .await
+        .unwrap_or_else(|e| {
+            error!("Task join error when persisting key: {}. Error: {}", key, e);
+            Err(std::io::Error::other(e))
+        });
+
         if result.is_ok() {
             info!("Successfully persisted key:   {} to disk", key);
         } else {
@@ -68,15 +100,15 @@ impl FastbuCache {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_insert_and_get() {
+    #[tokio::test]
+    async fn test_insert_and_get() {
         let cache = FastbuCache::new();
 
         let key = "test_key".to_string();
         let value = "test_value".to_string();
 
         // Insert the key-value pair
-        assert!(cache.insert(key.clone(), value.clone()).is_ok());
+        assert!(cache.insert(key.clone(), value.clone()).await.is_ok());
 
         // Retrieve the value
         let retrieved_value = cache.get(&key);
@@ -84,8 +116,8 @@ mod tests {
         assert_eq!(retrieved_value.unwrap(), value);
     }
 
-    #[test]
-    fn test_get_nonexistent_key() {
+    #[tokio::test]
+    async fn test_get_nonexistent_key() {
         let cache = FastbuCache::new();
 
         let key = "nonexistent_key";
