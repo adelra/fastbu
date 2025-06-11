@@ -7,7 +7,7 @@ use tokio::task;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct CacheEntry {
-    value: String,
+    pub value: String,
 }
 
 pub struct FastbuCache {

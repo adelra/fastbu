@@ -1,3 +1,4 @@
+use crate::api_cache_trait::ApiCache;
 use crate::cache::FastbuCache;
 use log::{debug, error, info, warn};
 use std::net::SocketAddr;
@@ -20,7 +21,7 @@ async fn handle_rejection(
     }
 }
 
-pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result<(), warp::Error> {
+pub async fn start_server<T: ApiCache + 'static>(cache: T, host: String, port: u16) -> Result<(), warp::Error> {
     info!("Initializing server with host: {} and port: {}", host, port);
     let cache = Arc::new(cache);
 
@@ -31,10 +32,10 @@ pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result
     let get_cache = cache.clone();
     let get_item = warp::path!("get" / String)
         .and(warp::any().map(move || get_cache.clone()))
-        .and_then(|key: String, cache: Arc<FastbuCache>| {
+        .and_then(|key: String, cache: Arc<T>| {
             debug!("Received GET request for key: {}", key);
-            let value = cache.get(&key);
             async move {
+                let value = cache.get(&key).await;
                 if let Some(val) = value {
                     info!("Key found: {}. Returning value.", key);
                     Ok::<_, warp::Rejection>(warp::reply::with_status(
@@ -59,14 +60,14 @@ pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result
     let set_item = warp::path!("set" / String / String)
         .and(warp::post())
         .and(warp::any().map(move || set_cache.clone()))
-        .and_then(|key: String, value: String, cache: Arc<FastbuCache>| {
+        .and_then(|key: String, value: String, cache: Arc<T>| {
             debug!(
                 "Received POST request to set key: {} with value: {}",
                 key, value
             );
             async move {
-                debug!("Calling cache.insert for key: {}", key);
-                match cache.insert(key.clone(), value.clone()).await {
+                debug!("Calling cache.set for key: {}", key);
+                match cache.set(key.clone(), value.clone()).await {
                     Ok(_) => {
                         debug!("Successfully inserted key: {}", key);
                         // Explicitly return a response
