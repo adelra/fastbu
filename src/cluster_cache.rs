@@ -260,3 +260,51 @@ impl ClusterCache {
         self.cluster.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cluster::{ClusterConfig, ClusterNode};
+    use std::net::IpAddr;
+    use std::str::FromStr;
+
+    #[tokio::test]
+    async fn test_cluster_cache_new() {
+        // Create a simple cluster config for testing
+        let mut config = ClusterConfig::default();
+        config.node.id = "test-node".to_string();
+        config.node.host = "127.0.0.1".to_string();
+        config.node.port = 8001;
+        
+        let cluster = FastbuCluster::new(config);
+        let cache = ClusterCache::new(cluster);
+        
+        // The test passes if ClusterCache::new doesn't panic
+        assert!(true, "ClusterCache::new should not panic");
+    }
+
+    #[tokio::test]
+    async fn test_local_operations() {
+        // Create a simple cluster config for testing
+        let mut config = ClusterConfig::default();
+        config.node.id = "test-node".to_string();
+        config.node.host = "127.0.0.1".to_string();
+        config.node.port = 8001;
+        
+        let cluster = FastbuCluster::new(config);
+        let cache = ClusterCache::new(cluster);
+        
+        // Since this is a single-node cluster, all operations should be local
+        let key = "local-test-key".to_string();
+        let value = "local-test-value".to_string();
+        
+        // Insert should succeed
+        let result = cache.insert(key.clone(), value.clone()).await;
+        assert!(result.is_ok(), "Local insert should succeed");
+        
+        // Get should return the inserted value
+        let retrieved = cache.get(&key).await;
+        assert!(retrieved.is_some(), "Local get should find the key");
+        assert_eq!(retrieved.unwrap(), value, "Retrieved value should match inserted value");
+    }
+}

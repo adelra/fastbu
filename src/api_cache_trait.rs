@@ -34,3 +34,34 @@ impl ApiCache for crate::api_cache::ClusterAwareApiCache {
         self.insert(key, value).await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::cache::FastbuCache;
+
+    #[tokio::test]
+    async fn test_fastbu_cache_impl() {
+        let cache = FastbuCache::new();
+
+        // Test setting a value
+        let key = "test_key".to_string();
+        let value = "test_value".to_string();
+        let set_result = <FastbuCache as ApiCache>::set(&cache, key.clone(), value.clone()).await;
+        assert!(set_result.is_ok());
+
+        // Test getting the value
+        let get_result = <FastbuCache as ApiCache>::get(&cache, &key).await;
+        assert!(get_result.is_some());
+        assert_eq!(get_result.unwrap(), value);
+    }
+
+    #[tokio::test]
+    async fn test_get_nonexistent_key() {
+        let cache = FastbuCache::new();
+
+        // Test getting a nonexistent key
+        let get_result = <FastbuCache as ApiCache>::get(&cache, "nonexistent_key").await;
+        assert!(get_result.is_none());
+    }
+}

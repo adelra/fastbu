@@ -580,36 +580,96 @@ impl ClusterNode for FastbuCluster {
 
         // Try to connect to each peer and exchange node info
         let peers = self.get_peers().await;
+        let mut any_success = false;
+        
         for peer_addr in peers {
-            if let Ok(mut stream) = tokio::net::TcpStream::connect(&peer_addr).await {
-                // Send our node info
-                let node_bytes = bincode::serialize(&self.local_node).unwrap();
-                let len = node_bytes.len() as u32;
-                let len_bytes = len.to_be_bytes();
-                let _ = stream.write_all(&len_bytes).await;
-                let _ = stream.write_all(&node_bytes).await;
-                
-                // Read peer's node info
-                let mut len_bytes = [0u8; 4];
-                if let Ok(_) = stream.read_exact(&mut len_bytes).await {
-                    let len = u32::from_be_bytes(len_bytes) as usize;
-                    let mut data = vec![0u8; len];
+            match tokio::time::timeout(
+                std::time::Duration::from_secs(5), // 5 second timeout
+                tokio::net::TcpStream::connect(&peer_addr)
+            ).await {
+                Ok(Ok(mut stream)) => {
+                    // Send our node info
+                    let node_bytes = match bincode::serialize(&self.local_node) {
+                        Ok(bytes) => bytes,
+                        Err(e) => {
+                            warn!("Failed to serialize node info: {}", e);
+                            continue;
+                        }
+                    };
                     
-                    if let Ok(_) = stream.read_exact(&mut data).await {
-                        if let Ok(peer_node) = bincode::deserialize::<Node>(&data) {
+                    let len = node_bytes.len() as u32;
+                    let len_bytes = len.to_be_bytes();
+                    
+                    // Write length and node data with proper error handling
+                    if let Err(e) = stream.write_all(&len_bytes).await {
+                        warn!("Failed to send length bytes to {}: {}", peer_addr, e);
+                        continue;
+                    }
+                    
+                    if let Err(e) = stream.write_all(&node_bytes).await {
+                        warn!("Failed to send node data to {}: {}", peer_addr, e);
+                        continue;
+                    }
+                    
+                    // Read peer's node info with timeout
+                    match tokio::time::timeout(
+                        std::time::Duration::from_secs(5),
+                        async {
+                            // Read length
+                            let mut len_bytes = [0u8; 4];
+                            if let Err(e) = stream.read_exact(&mut len_bytes).await {
+                                return Err(format!("Failed to read length bytes: {}", e));
+                            }
+                            
+                            let len = u32::from_be_bytes(len_bytes) as usize;
+                            let mut data = vec![0u8; len];
+                            
+                            // Read data
+                            if let Err(e) = stream.read_exact(&mut data).await {
+                                return Err(format!("Failed to read data: {}", e));
+                            }
+                            
+                            // Deserialize
+                            match bincode::deserialize::<Node>(&data) {
+                                Ok(peer_node) => Ok(peer_node),
+                                Err(e) => Err(format!("Failed to deserialize node: {}", e))
+                            }
+                        }
+                    ).await {
+                        Ok(Ok(peer_node)) => {
                             info!("Received node info from peer {}: {}", peer_addr, peer_node.id);
                             // Add this node to our hash ring
-                            self.handle_node_joined(&peer_node).await?;
+                            if let Err(e) = self.handle_node_joined(&peer_node).await {
+                                warn!("Failed to add peer node to hash ring: {}", e);
+                                // Continue anyway
+                            }
+                            any_success = true;
+                            info!("Connected to peer {} and exchanged node info", peer_addr);
+                        },
+                        Ok(Err(e)) => {
+                            warn!("Error reading from peer {}: {}", peer_addr, e);
+                        },
+                        Err(_) => {
+                            warn!("Timed out reading from peer {}", peer_addr);
                         }
                     }
+                },
+                Ok(Err(e)) => {
+                    warn!("Could not connect to peer {}: {}", peer_addr, e);
+                },
+                Err(_) => {
+                    warn!("Connection to peer {} timed out", peer_addr);
                 }
-                
-                info!("Connected to peer {} and exchanged node info", peer_addr);
-            } else {
-                warn!("Could not connect to peer {}", peer_addr);
             }
         }
-
+        
+        // If we're a seed node with no seeds, consider it successful
+        if self.config.cluster.seeds.is_empty() {
+            any_success = true;
+        }
+        
+        // Continue with initialization even if we couldn't connect to peers
+        // This allows the node to start its API server and try again later
         info!("Cluster initialization complete");
         Ok(())
     }
@@ -754,4 +814,59 @@ pub fn load_cluster_config(config_path: &str) -> Result<ClusterConfig, config::C
     })?;
     
     Ok(config)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::net::IpAddr;
+    
+    #[test]
+    fn test_node_creation() {
+        let node = Node::new("localhost".to_string(), 8001, 3031);
+        
+        // Check that node ID is created (UUID)
+        assert!(!node.id.is_empty(), "Node should have a valid ID");
+        
+        // Check node properties
+        assert_eq!(node.host, "localhost");
+        assert_eq!(node.port, 8001);
+        assert_eq!(node.api_port, 3031);
+        
+        // Empty metadata map
+        assert!(node.metadata.is_empty());
+    }
+    
+    #[test]
+    fn test_node_with_id() {
+        let id = "test-node-123";
+        let node = Node::with_id(id.to_string(), "127.0.0.1".to_string(), 8002, 3032);
+        
+        // Check that node ID is set correctly
+        assert_eq!(node.id, id);
+        
+        // Check node properties
+        assert_eq!(node.host, "127.0.0.1");
+        assert_eq!(node.port, 8002);
+        assert_eq!(node.api_port, 3032);
+    }
+    
+    #[test]
+    fn test_node_addr() {
+        let node = Node::new("127.0.0.1".to_string(), 8001, 3031);
+        
+        let addr = node.addr();
+        assert_eq!(addr.ip().to_string(), "127.0.0.1");
+        assert_eq!(addr.port(), 8001);
+    }
+    
+    #[tokio::test]
+    async fn test_cluster_config_default() {
+        let config = ClusterConfig::default();
+        
+        // Default values should be set
+        assert!(!config.node.id.is_empty(), "Node ID should be set");
+        assert_eq!(config.node.host, "127.0.0.1");
+        assert!(config.node.port > 0, "Port should be set");
+    }
 }
