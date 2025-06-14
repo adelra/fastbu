@@ -1,0 +1,21 @@
+# Fastbu Cluster Configuration
+
+# Local node configuration
+[node]
+id = "node1"                # Optional: A unique identifier for this node. If not specified, a UUID will be generated
+host = "127.0.0.1"          # The IP address or hostname of this node
+port = 7946                 # The port to use for internal cluster communication
+api_port = 3031             # The port to use for the HTTP API
+
+# Cluster configuration
+[cluster]
+seeds = ["127.0.0.1:7946"]  # List of seed nodes to connect to (can be empty for the first node)
+virtual_nodes = 10          # Number of virtual nodes per physical node for consistent hashing
+gossip_interval = 1         # Time interval in seconds for gossip protocol
+node_timeout = 10           # Time in seconds after which a node is considered failed
+
+# Cache configuration
+[cache]
+# The replication factor determines how many copies of each key-value pair are stored
+# across the cluster. Higher values provide better fault tolerance but use more memory.
+replication_factor = 1      # Number of nodes to replicate each key-value pair to

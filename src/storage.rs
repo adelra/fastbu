@@ -157,3 +157,43 @@ impl Storage {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn test_storage_initialization() {
+        let storage = Storage::new();
+        assert!(storage.is_ok(), "Storage initialization should succeed");
+
+        // Clean up test directory if it exists
+        if let Ok(storage) = storage {
+            assert!(
+                storage.base_dir.exists(),
+                "Storage directory should exist after initialization"
+            );
+        }
+    }
+
+    #[test]
+    fn test_save_entry() {
+        let storage = Storage::new().expect("Storage initialization should succeed");
+
+        let key = "test_key";
+        let entry = CacheEntry {
+            value: "test_value".to_string(),
+        };
+
+        let result = storage.save(key, &entry);
+        assert!(result.is_ok(), "Saving an entry should succeed");
+
+        // Verify file exists
+        let expected_file = storage.base_dir.join(format!("{}.cache", key));
+        assert!(
+            expected_file.exists(),
+            "Cache file should exist after saving"
+        );
+    }
+}
