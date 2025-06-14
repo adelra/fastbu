@@ -194,4 +194,37 @@ mod tests {
             
         assert_eq!(resp.status(), StatusCode::NOT_FOUND);
     }
+
+    #[tokio::test]
+    async fn test_set_endpoint() {
+        let mock_cache = MockCache::new();
+        let cache = Arc::new(mock_cache);
+        let set_clone = cache.clone();
+        let set_item = warp::path!("set" / String / String)
+            .and(warp::post())
+            .and(warp::any().map(move || set_clone.clone()))
+            .and_then(|key: String, value: String, cache: Arc<MockCache>| {
+                async move {
+                    match cache.set(key.clone(), value.clone()).await {
+                        Ok(_) => Ok::<_, warp::Rejection>(warp::reply::with_status(
+                            warp::reply::json(&format!("Key '{}' stored successfully", key)),
+                            warp::http::StatusCode::OK,
+                        )),
+                        Err(_) => Ok::<_, warp::Rejection>(warp::reply::with_status(
+                            warp::reply::json(&format!("Failed to store key '{}'", key)),
+                            warp::http::StatusCode::INTERNAL_SERVER_ERROR,
+                        )),
+                    }
+                }
+            });
+
+        // Test set endpoint
+        let resp = request()
+            .method("POST")
+            .path("/set/mykey/myvalue")
+            .reply(&set_item)
+            .await;
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert!(String::from_utf8(resp.body().to_vec()).unwrap().contains("Key 'mykey' stored successfully"));
+    }
 }
