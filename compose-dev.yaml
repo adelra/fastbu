@@ -1,9 +1,11 @@
 services:
   app:
+    build:
+      context: .
+      dockerfile: Dockerfile
     entrypoint:
     - sleep
     - infinity
-    image: docker/dev-environments-default:stable-1
     init: true
     volumes:
     - type: bind
