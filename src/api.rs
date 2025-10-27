@@ -66,7 +66,7 @@ pub async fn start_server(cache: FastbuCache, host: String, port: u16) -> Result
             );
             async move {
                 debug!("Calling cache.insert for key: {}", key);
-                match cache.insert(key.clone(), value.clone()) {
+                match cache.insert(key.clone(), value.clone()).await {
                     Ok(_) => {
                         debug!("Successfully inserted key: {}", key);
                         // Explicitly return a response
