@@ -1,0 +1,17 @@
+on:
+  push:
+    branches:
+      - main
+name: release-please
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Run release-please
+        id: release-please
+        uses: googleapis/release-please-action@v4
+        with:
+          release-type: rust 
