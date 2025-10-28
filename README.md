@@ -61,8 +61,8 @@ docker pull adelra/fastbu
 docker run -p 3031:3031 adelra/fastbu
 
 # Or build and run locally
-make docker-build
-make docker-run
+make build
+make run
 ```
 
 ## Usage
